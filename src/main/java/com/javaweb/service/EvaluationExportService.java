@@ -273,6 +273,8 @@ public class EvaluationExportService {
             }
         }
 
+        int lastDataColumn = baseColumns + flattenedPis.size();
+
         int rowIdx = startRow;
         int order = 1;
         for (StudentEvaluation evaluation : evaluations) {
@@ -298,8 +300,49 @@ public class EvaluationExportService {
             setCell(row, colIdx, total, styles.cellCenter);
         }
 
-        Row signature = sheet.createRow(rowIdx + 1);
-        setCell(signature, 0, "Chữ ký và họ tên:", styles.normalLeft);
+        int noteRow = rowIdx + 1;
+
+        noteRow++; // spacer
+
+        String[] notes = {
+                "Ghi ch\u00fa:",
+                "CLO 3 Thi\u1ebft k\u1ebf ph\u1ea7n c\u1ee9ng v\u00e0 ph\u1ea7n m\u1ec1m, ph\u00e2n t\u00edch d\u1eef li\u1ec7u \u0111\u1ec3 \u0111\u00e1nh gi\u00e1 hi\u1ec7u qu\u1ea3 ho\u1ea1t \u0111\u1ed9ng c\u1ee7a h\u1ec7 th\u1ed1ng \u0111i\u1ec7n t\u1eed \u0111i\u1ec7n t\u1eed.",
+                "C3.3 Ti\u1ebfn h\u00e0nh \u0111\u01b0\u1ee3c c\u00e1c th\u00ed nghi\u1ec7m, c\u0169ng nh\u01b0 ph\u00e2n t\u00edch, \u0111\u00e1nh gi\u00e1 v\u00e0 di\u1ec5n gi\u1ea3i c\u00e1c k\u1ebft qu\u1ea3 th\u00ed nghi\u1ec7m.",
+                "C4.0 Th\u1ec3 hi\u1ec7n \u0111\u01b0\u1ee3c \u0111\u1ea1o \u0111\u1ee9c v\u00e0 tr\u00e1ch nhi\u1ec7m ngh\u1ec1 nghi\u1ec7p trong qu\u00e1 tr\u00ecnh tri\u1ec3n khai c\u00e1c h\u1ec7 th\u1ed1ng \u0111i\u1ec7n.",
+                "C4.2 Gi\u1ea3i th\u00edch \u0111\u01b0\u1ee3c t\u00e1c \u0111\u1ed9ng c\u1ee7a k\u1ebft qu\u1ea3 nghi\u00ean c\u1ee9u \u0111\u1ed1i v\u1edbi c\u1ed9ng \u0111\u1ed3ng, x\u00e3 h\u1ed9i, ho\u1eb7c ng\u00e0nh ngh\u1ec1.",
+                "C5.3 Hi\u1ec7u qu\u1ea3 gi\u1ea3i quy\u1ebft v\u1ea5n \u0111\u1ec1 c\u1ee7a nh\u00f3m.",
+                "CLO 6 V\u1eadn d\u1ee5ng k\u1ef9 n\u0103ng giao ti\u1ebfp trong ng\u00e0nh \u0111i\u1ec7n - \u0111i\u1ec7n t\u1eed.",
+                "C6.3 Kh\u1ea3 n\u0103ng thuy\u1ebft tr\u00ecnh.",
+                "C6.4 Kh\u1ea3 n\u0103ng giao ti\u1ebfp \u0111\u1ed1i tho\u1ea1i v\u00e0 tr\u1ea3 l\u1eddi c\u00e1c c\u00e2u h\u1ecfi c\u1ee7a h\u1ed9i \u0111\u1ed3ng."
+        };
+
+        for (int i = 0; i < notes.length; i++) {
+            Row noteLine = sheet.createRow(noteRow++);
+            merge(sheet, noteLine.getRowNum(), noteLine.getRowNum(), 0, lastDataColumn);
+            CellStyle noteStyle = (i == 0) ? styles.noteHeading : styles.noteEmphasis;
+            setCell(noteLine, 0, notes[i], noteStyle);
+        }
+
+        noteRow++; // blank line before signature block
+
+        int signatureStartColumn = Math.min(1, lastDataColumn);
+        int signatureEndColumn = Math.max(signatureStartColumn, Math.min(signatureStartColumn + 3, lastDataColumn));
+
+        Row signerTitle = sheet.createRow(noteRow++);
+        merge(sheet, signerTitle.getRowNum(), signerTitle.getRowNum(), signatureStartColumn, signatureEndColumn);
+        setCell(signerTitle, signatureStartColumn, "NG\u01af\u1edcI \u0110\u00c1NH GI\u00c1", styles.boldLeft);
+
+        Row signerSpace = sheet.createRow(noteRow++);
+        merge(sheet, signerSpace.getRowNum(), signerSpace.getRowNum(), signatureStartColumn, signatureEndColumn);
+        setCell(signerSpace, signatureStartColumn, "", styles.normalLeft);
+
+        Row signerSpace2 = sheet.createRow(noteRow++);
+        merge(sheet, signerSpace2.getRowNum(), signerSpace2.getRowNum(), signatureStartColumn, signatureEndColumn);
+        setCell(signerSpace2, signatureStartColumn, "", styles.normalLeft);
+
+        Row signerName = sheet.createRow(noteRow);
+        merge(sheet, signerName.getRowNum(), signerName.getRowNum(), signatureStartColumn, signatureEndColumn);
+        setCell(signerName, signatureStartColumn, nullSafe(lecturer.getLecturerName()).toUpperCase(), styles.boldLeft);
     }
 
     private int writeInfoRow(Sheet sheet,
@@ -425,6 +468,8 @@ public class EvaluationExportService {
         final CellStyle cellCenter;
         final CellStyle cellLeft;
         final CellStyle note;
+        final CellStyle noteHeading;
+        final CellStyle noteEmphasis;
 
         Styles(Workbook workbook) {
             Font normal = workbook.createFont();
@@ -462,7 +507,21 @@ public class EvaluationExportService {
             noteFont.setItalic(true);
             noteFont.setFontName("Times New Roman");
             noteFont.setFontHeightInPoints((short) 12);
-            noteFont.setColor(IndexedColors.RED.getIndex());
+            noteFont.setColor(IndexedColors.BLACK.getIndex());
+
+            Font noteHeadingFont = workbook.createFont();
+            noteHeadingFont.setBold(true);
+            noteHeadingFont.setItalic(true);
+            noteHeadingFont.setFontName("Times New Roman");
+            noteHeadingFont.setFontHeightInPoints((short) 12);
+            noteHeadingFont.setColor(IndexedColors.BLACK.getIndex());
+
+            Font noteEmphasisFont = workbook.createFont();
+            noteEmphasisFont.setBold(true);
+            noteEmphasisFont.setItalic(true);
+            noteEmphasisFont.setFontName("Times New Roman");
+            noteEmphasisFont.setFontHeightInPoints((short) 12);
+            noteEmphasisFont.setColor(IndexedColors.BLACK.getIndex());
 
             boldLeft = workbook.createCellStyle();
             boldLeft.setFont(bold);
@@ -534,6 +593,18 @@ public class EvaluationExportService {
             note.setFont(noteFont);
             note.setAlignment(HorizontalAlignment.LEFT);
             note.setVerticalAlignment(VerticalAlignment.CENTER);
+
+            noteHeading = workbook.createCellStyle();
+            noteHeading.setFont(noteHeadingFont);
+            noteHeading.setAlignment(HorizontalAlignment.LEFT);
+            noteHeading.setVerticalAlignment(VerticalAlignment.CENTER);
+            noteHeading.setWrapText(true);
+
+            noteEmphasis = workbook.createCellStyle();
+            noteEmphasis.setFont(noteEmphasisFont);
+            noteEmphasis.setAlignment(HorizontalAlignment.LEFT);
+            noteEmphasis.setVerticalAlignment(VerticalAlignment.CENTER);
+            noteEmphasis.setWrapText(true);
         }
 
         private void addBorder(CellStyle style) {
