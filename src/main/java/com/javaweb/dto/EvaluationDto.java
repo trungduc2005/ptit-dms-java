@@ -127,14 +127,20 @@ public class EvaluationDto {
         private String lecturerId;
         private String lecturerName;
         private String role;
+        private String department;
         private List<StudentEvaluation> evaluations;
 
         public Lecturer() {}
         public Lecturer(String lecturerId, String lecturerName, String role,
                         List<StudentEvaluation> evaluations) {
+            this(lecturerId, lecturerName, role, null, evaluations);
+        }
+        public Lecturer(String lecturerId, String lecturerName, String role,
+                        String department, List<StudentEvaluation> evaluations) {
             this.lecturerId = lecturerId;
             this.lecturerName = lecturerName;
             this.role = role;
+            this.department = department;
             this.evaluations = evaluations;
         }
         public String getLecturerId() { return lecturerId; }
@@ -143,6 +149,8 @@ public class EvaluationDto {
         public void setLecturerName(String lecturerName) { this.lecturerName = lecturerName; }
         public String getRole() { return role; }
         public void setRole(String role) { this.role = role; }
+        public String getDepartment() { return department; }
+        public void setDepartment(String department) { this.department = department; }
         public List<StudentEvaluation> getEvaluations() { return evaluations; }
         public void setEvaluations(List<StudentEvaluation> evaluations) { this.evaluations = evaluations; }
     }
@@ -150,19 +158,34 @@ public class EvaluationDto {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class StudentEvaluation {
         private String studentId;
+        private String studentName;
         private String className;
+        private String comment;
         private Evaluation evaluations; // object con
 
         public StudentEvaluation() {}
         public StudentEvaluation(String studentId, String className, Evaluation evaluations) {
+            this(studentId, null, className, evaluations, null);
+        }
+        public StudentEvaluation(String studentId, String studentName, String className, Evaluation evaluations) {
+            this(studentId, studentName, className, evaluations, null);
+        }
+        public StudentEvaluation(String studentId, String studentName, String className,
+                                 Evaluation evaluations, String comment) {
             this.studentId = studentId;
+            this.studentName = studentName;
             this.className = className;
+            this.comment = comment;
             this.evaluations = evaluations;
         }
         public String getStudentId() { return studentId; }
         public void setStudentId(String studentId) { this.studentId = studentId; }
+        public String getStudentName() { return studentName; }
+        public void setStudentName(String studentName) { this.studentName = studentName; }
         public String getClassName() { return className; }
         public void setClassName(String className) { this.className = className; }
+        public String getComment() { return comment; }
+        public void setComment(String comment) { this.comment = comment; }
         public Evaluation getEvaluations() { return evaluations; }
         public void setEvaluations(Evaluation evaluations) { this.evaluations = evaluations; }
 

@@ -9,6 +9,7 @@ import com.javaweb.dto.EvaluationDto.Score;
 import com.javaweb.dto.EvaluationDto.StudentEvaluation;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.RegionUtil;
 import org.apache.poi.ss.util.WorkbookUtil;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
@@ -72,8 +73,8 @@ public class EvaluationExportService {
             totalPiColumns += Math.max(1, pis.size());
         }
 
-        int baseColumns = 4; // TT, Mã SV, Họ và tên, Lớp
-        int totalColumns = baseColumns + totalPiColumns + 1; // +1 cho cột Tổng điểm
+        int baseColumns = 5; // TT, Mã SV, Họ, Tên, Lớp
+        int totalColumns = baseColumns + totalPiColumns + 2; // +1 Tổng điểm, +1 Nhận xét
 
         configureColumnWidths(sheet, totalColumns);
 
@@ -159,8 +160,9 @@ public class EvaluationExportService {
         Row section1 = sheet.createRow(rowIndex++);
         setCell(section1, 0, "I. THÔNG TIN CHUNG", styles.boldLeft);
 
-        String lecturerName = nullSafe(lecturer.getLecturerName());
-        String lecturerRole = nullSafe(lecturer.getRole());
+        String lecturerName = lecturer != null ? nullSafe(lecturer.getLecturerName()) : "";
+        String lecturerRole = lecturer != null ? nullSafe(lecturer.getRole()) : "";
+        String lecturerDepartment = lecturer != null ? nullSafe(lecturer.getDepartment()) : "";
         rowIndex = writeInfoRow(sheet, rowIndex,
                 "Chương trình đào tạo đại học chính quy:", "",
                 "Niên khóa:", academicYear,
@@ -175,8 +177,9 @@ public class EvaluationExportService {
                 "Họ và tên người chấm ĐATN: " + lecturerName, null,
                 "Chức danh trong hội đồng: " + lecturerRole, null,
                 styles, lastColumnIndex);
-
-        // Skip optional "Don vi cong tac" row to avoid repeating payload data
+        Row unitRow = sheet.createRow(rowIndex++);
+        merge(sheet, unitRow.getRowNum(), unitRow.getRowNum(), 0, lastColumnIndex);
+        setCell(unitRow, 0, "Đơn vị công tác: " + lecturerDepartment, styles.normalLeft);
 
         rowIndex++; // dòng trống
 
@@ -203,14 +206,35 @@ public class EvaluationExportService {
         Row row2 = sheet.createRow(headerRowIndex + 2);
         Row row3 = sheet.createRow(headerRowIndex + 3);
 
-        String[] baseHeaders = {"TT", "Mã SV", "Họ và tên SV", "Lớp"};
-        for (int i = 0; i < baseHeaders.length; i++) {
-            merge(sheet, headerRowIndex, headerRowIndex + 3, i, i);
-            setCell(row0, i, baseHeaders[i], styles.header);
-            setCell(row1, i, "", styles.header);
-            setCell(row2, i, "", styles.header);
-            setCell(row3, i, "", styles.header);
-        }
+        merge(sheet, headerRowIndex, headerRowIndex + 3, 0, 0);
+        setCell(row0, 0, "TT", styles.header);
+        setCell(row1, 0, "", styles.header);
+        setCell(row2, 0, "", styles.header);
+        setCell(row3, 0, "", styles.header);
+
+        merge(sheet, headerRowIndex, headerRowIndex + 3, 1, 1);
+        setCell(row0, 1, "Mã SV", styles.header);
+        setCell(row1, 1, "", styles.header);
+        setCell(row2, 1, "", styles.header);
+        setCell(row3, 1, "", styles.header);
+
+        CellRangeAddress nameRegion = new CellRangeAddress(headerRowIndex, headerRowIndex + 3, 2, 3);
+        merge(sheet, nameRegion.getFirstRow(), nameRegion.getLastRow(), nameRegion.getFirstColumn(), nameRegion.getLastColumn());
+        applyHeaderBorder(sheet, nameRegion);
+        setCell(row0, 2, "Họ và tên SV", styles.header);
+        setCell(row0, 3, "", styles.header);
+        setCell(row1, 2, "", styles.header);
+        setCell(row1, 3, "", styles.header);
+        setCell(row2, 2, "", styles.header);
+        setCell(row2, 3, "", styles.header);
+        setCell(row3, 2, "", styles.header);
+        setCell(row3, 3, "", styles.header);
+
+        merge(sheet, headerRowIndex, headerRowIndex + 3, 4, 4);
+        setCell(row0, 4, "Lớp", styles.header);
+        setCell(row1, 4, "", styles.header);
+        setCell(row2, 4, "", styles.header);
+        setCell(row3, 4, "", styles.header);
 
         int cloStartCol = baseColumns;
         int columnIndex = baseColumns;
@@ -240,12 +264,25 @@ public class EvaluationExportService {
 
         int cloEndCol = columnIndex - 1;
         if (cloEndCol >= cloStartCol) {
-            merge(sheet, headerRowIndex, headerRowIndex, cloStartCol, cloEndCol);
+            CellRangeAddress cloRegion = new CellRangeAddress(headerRowIndex, headerRowIndex, cloStartCol, cloEndCol);
+            merge(sheet, cloRegion.getFirstRow(), cloRegion.getLastRow(), cloRegion.getFirstColumn(), cloRegion.getLastColumn());
+            applyHeaderBorder(sheet, cloRegion);
             setCell(row0, cloStartCol, "Kết quả đánh giá CLO và tiêu chí", styles.header);
         }
 
-        merge(sheet, headerRowIndex, headerRowIndex + 3, columnIndex, columnIndex);
+        CellRangeAddress totalRegion = new CellRangeAddress(headerRowIndex, headerRowIndex + 3, columnIndex, columnIndex);
+        merge(sheet, totalRegion.getFirstRow(), totalRegion.getLastRow(), totalRegion.getFirstColumn(), totalRegion.getLastColumn());
+        applyHeaderBorder(sheet, totalRegion);
         setCell(row0, columnIndex, "Tổng điểm", styles.header);
+        setCell(row1, columnIndex, "", styles.header);
+        setCell(row2, columnIndex, "", styles.header);
+        setCell(row3, columnIndex, "", styles.header);
+
+        columnIndex++;
+        CellRangeAddress commentRegion = new CellRangeAddress(headerRowIndex, headerRowIndex + 3, columnIndex, columnIndex);
+        merge(sheet, commentRegion.getFirstRow(), commentRegion.getLastRow(), commentRegion.getFirstColumn(), commentRegion.getLastColumn());
+        applyHeaderBorder(sheet, commentRegion);
+        setCell(row0, columnIndex, "Nhận xét khác đối với sinh viên", styles.header);
         setCell(row1, columnIndex, "", styles.header);
         setCell(row2, columnIndex, "", styles.header);
         setCell(row3, columnIndex, "", styles.header);
@@ -273,7 +310,7 @@ public class EvaluationExportService {
             }
         }
 
-        int lastDataColumn = baseColumns + flattenedPis.size();
+        int lastDataColumn = baseColumns + flattenedPis.size() + 1;
 
         int rowIdx = startRow;
         int order = 1;
@@ -281,8 +318,10 @@ public class EvaluationExportService {
             Row row = sheet.createRow(rowIdx++);
             setCell(row, 0, order++, styles.cellCenter);
             setCell(row, 1, nullSafe(evaluation.getStudentId()), styles.cellCenter);
-            setCell(row, 2, "", styles.cellLeft);
-            setCell(row, 3, nullSafe(evaluation.getClassName()), styles.cellCenter);
+            String[] nameParts = splitStudentName(evaluation.getStudentName());
+            setCell(row, 2, nameParts[0], styles.cellLeft);
+            setCell(row, 3, nameParts[1], styles.cellLeft);
+            setCell(row, 4, nullSafe(evaluation.getClassName()), styles.cellCenter);
 
             Map<String, Double> scores = toScoreMap(evaluation);
             int colIdx = baseColumns;
@@ -297,7 +336,8 @@ public class EvaluationExportService {
             Double total = evaluation.getEvaluations() != null
                     ? evaluation.getEvaluations().getTotalScore()
                     : null;
-            setCell(row, colIdx, total, styles.cellCenter);
+            setCell(row, colIdx++, total, styles.cellCenter);
+            setCell(row, colIdx, nullSafe(evaluation.getComment()), styles.cellLeft);
         }
 
         int noteRow = rowIdx + 1;
@@ -398,12 +438,37 @@ public class EvaluationExportService {
     private void configureColumnWidths(Sheet sheet, int totalColumns) {
         sheet.setColumnWidth(0, 6 * 256);
         sheet.setColumnWidth(1, 18 * 256);
-        sheet.setColumnWidth(2, 28 * 256);
+        sheet.setColumnWidth(2, 22 * 256);
         sheet.setColumnWidth(3, 14 * 256);
-        for (int i = 4; i < totalColumns - 1; i++) {
+        sheet.setColumnWidth(4, 18 * 256);
+        int totalColumnIndex = Math.max(5, totalColumns - 2);
+        int commentColumnIndex = Math.max(totalColumnIndex + 1, totalColumns - 1);
+        for (int i = 5; i < Math.min(totalColumnIndex, totalColumns); i++) {
             sheet.setColumnWidth(i, 12 * 256);
         }
-        sheet.setColumnWidth(Math.max(4, totalColumns - 1), 14 * 256);
+        if (totalColumnIndex < totalColumns) {
+            sheet.setColumnWidth(totalColumnIndex, 14 * 256);
+        }
+        if (commentColumnIndex < totalColumns) {
+            sheet.setColumnWidth(commentColumnIndex, 28 * 256);
+        }
+    }
+
+    private String[] splitStudentName(String fullName) {
+        if (fullName == null) {
+            return new String[]{"", ""};
+        }
+        String normalized = fullName.trim().replaceAll("\\s+", " ");
+        if (normalized.isEmpty()) {
+            return new String[]{"", ""};
+        }
+        int lastSpace = normalized.lastIndexOf(' ');
+        if (lastSpace < 0) {
+            return new String[]{"", normalized};
+        }
+        String lastName = normalized.substring(0, lastSpace);
+        String firstName = normalized.substring(lastSpace + 1);
+        return new String[]{lastName, firstName};
     }
 
     private Map<String, Double> toScoreMap(StudentEvaluation evaluation) {
@@ -452,6 +517,13 @@ public class EvaluationExportService {
 
     private String formatPercent(Double value) {
         return value != null ? String.format("%.0f%%", value * 100) : "";
+    }
+
+    private void applyHeaderBorder(Sheet sheet, CellRangeAddress region) {
+        RegionUtil.setBorderTop(BorderStyle.THIN, region, sheet);
+        RegionUtil.setBorderBottom(BorderStyle.THIN, region, sheet);
+        RegionUtil.setBorderLeft(BorderStyle.THIN, region, sheet);
+        RegionUtil.setBorderRight(BorderStyle.THIN, region, sheet);
     }
 
     private static class Styles {
