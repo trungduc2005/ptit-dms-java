@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,18 +40,20 @@ public class EvaluationExportService {
         if (lecturers.isEmpty()) {
             Sheet sheet = workbook.createSheet("Export");
             Row row = sheet.createRow(0);
-            setCell(row, 0, "Không có dữ liệu để xuất", styles.normalLeft);
+            setCell(row, 0, "Kh\u00f4ng c\u00f3 d\u1eef li\u1ec7u \u0111\u1ec3 xu\u1ea5t", styles.normalLeft);
             sheet.autoSizeColumn(0);
             return workbook;
         }
 
         int sheetIndex = 1;
         for (Lecturer lecturer : lecturers) {
-            String name = lecturer.getLecturerName() != null ? lecturer.getLecturerName() : "Giảng viên";
+            String name = lecturer.getLecturerName() != null ? lecturer.getLecturerName() : "Gi\u1ea3ng vi\u00ean";
             String sheetName = WorkbookUtil.createSafeSheetName(String.format("%02d-%s", sheetIndex++, name));
             Sheet sheet = workbook.createSheet(sheetName);
             buildLecturerSheet(sheet, form, lecturer, indicators, styles);
         }
+
+        buildSummarySheet(workbook, form, lecturers, styles);
 
         return workbook;
     }
@@ -82,6 +85,212 @@ public class EvaluationExportService {
         rowIndex = buildSheetHeaderBlock(sheet, rowIndex, form, lecturer, totalColumns - 1, styles);
         rowIndex = buildEvaluationTableHeader(sheet, rowIndex, indicatorList, groupedPis, styles, baseColumns);
         populateScores(sheet, rowIndex, lecturer, groupedPis, styles, baseColumns);
+    }
+
+    private void buildSummarySheet(Workbook workbook,
+                                   EvaluationForm form,
+                                   List<Lecturer> lecturers,
+                                   Styles styles) {
+        if (lecturers == null || lecturers.isEmpty()) {
+            return;
+        }
+
+        String summaryName = WorkbookUtil.createSafeSheetName("00-Tong hop");
+        Sheet sheet = workbook.createSheet(summaryName);
+        configureSummaryColumnWidths(sheet, lecturers.size());
+
+        int rowIndex = 0;
+        rowIndex = buildSummaryHeader(sheet, rowIndex, lecturers, styles);
+
+        List<SummaryEntry> summaries = buildSummaryEntries(lecturers);
+        populateSummaryRows(sheet, rowIndex, summaries, styles);
+    }
+
+    private void configureSummaryColumnWidths(Sheet sheet, int lecturerCount) {
+        sheet.setColumnWidth(0, 6 * 256);
+        sheet.setColumnWidth(1, 18 * 256);
+        sheet.setColumnWidth(2, 22 * 256);
+        sheet.setColumnWidth(3, 14 * 256);
+        sheet.setColumnWidth(4, 18 * 256);
+        int scoreStart = 5;
+        for (int i = 0; i < lecturerCount; i++) {
+            sheet.setColumnWidth(scoreStart + i, 12 * 256);
+        }
+        sheet.setColumnWidth(scoreStart + lecturerCount, 14 * 256);
+        sheet.setColumnWidth(scoreStart + lecturerCount + 1, 28 * 256);
+    }
+
+    private int buildSummaryHeader(Sheet sheet,
+                                   int startRow,
+                                   List<Lecturer> lecturers,
+                                   Styles styles) {
+        int lecturerCount = lecturers.size();
+        Row row0 = sheet.createRow(startRow);
+        Row row1 = sheet.createRow(startRow + 1);
+        Row row2 = sheet.createRow(startRow + 2);
+        Row row3 = sheet.createRow(startRow + 3);
+
+        merge(sheet, startRow, startRow + 3, 0, 0);
+        setCell(row0, 0, "TT", styles.header);
+        setCell(row1, 0, "", styles.header);
+        setCell(row2, 0, "", styles.header);
+        setCell(row3, 0, "", styles.header);
+
+        merge(sheet, startRow, startRow + 3, 1, 1);
+        setCell(row0, 1, "M\u00e3 SV", styles.header);
+        setCell(row1, 1, "", styles.header);
+        setCell(row2, 1, "", styles.header);
+        setCell(row3, 1, "", styles.header);
+
+        CellRangeAddress nameRegion = new CellRangeAddress(startRow, startRow + 3, 2, 3);
+        merge(sheet, nameRegion.getFirstRow(), nameRegion.getLastRow(), nameRegion.getFirstColumn(), nameRegion.getLastColumn());
+        applyHeaderBorder(sheet, nameRegion);
+        setCell(row0, 2, "H\u1ecd v\u00e0 t\u00ean SV", styles.header);
+        setCell(row0, 3, "", styles.header);
+        setCell(row1, 2, "", styles.header);
+        setCell(row1, 3, "", styles.header);
+        setCell(row2, 2, "", styles.header);
+        setCell(row2, 3, "", styles.header);
+        setCell(row3, 2, "", styles.header);
+        setCell(row3, 3, "", styles.header);
+
+        merge(sheet, startRow, startRow + 3, 4, 4);
+        setCell(row0, 4, "L\u1edbp", styles.header);
+        setCell(row1, 4, "", styles.header);
+        setCell(row2, 4, "", styles.header);
+        setCell(row3, 4, "", styles.header);
+
+        int scoreStart = 5;
+        int scoreEnd = scoreStart + lecturerCount - 1;
+        if (lecturerCount > 0) {
+            CellRangeAddress summaryRegion = new CellRangeAddress(startRow, startRow, scoreStart, scoreEnd);
+            merge(sheet, summaryRegion.getFirstRow(), summaryRegion.getLastRow(), summaryRegion.getFirstColumn(), summaryRegion.getLastColumn());
+            applyHeaderBorder(sheet, summaryRegion);
+            setCell(row0, scoreStart, "GPA t\u1ed5ng k\u1ebft", styles.header);
+            for (int i = 0; i < lecturerCount; i++) {
+                Lecturer lecturer = lecturers.get(i);
+                String lecturerName = lecturer != null ? nullSafe(lecturer.getLecturerName()) : "";
+                int columnIndex = scoreStart + i;
+                setCell(row1, columnIndex, lecturerName, styles.header);
+                setCell(row2, columnIndex, String.format("GPA%d", i + 1), styles.header);
+                setCell(row3, columnIndex, "", styles.header);
+            }
+        }
+
+        int gpaColumn = scoreStart + lecturerCount;
+        CellRangeAddress gpaRegion = new CellRangeAddress(startRow, startRow + 3, gpaColumn, gpaColumn);
+        merge(sheet, gpaRegion.getFirstRow(), gpaRegion.getLastRow(), gpaRegion.getFirstColumn(), gpaRegion.getLastColumn());
+        applyHeaderBorder(sheet, gpaRegion);
+        setCell(row0, gpaColumn, "\u0110i\u1ec3m GPA (%)", styles.summaryGpaHeader);
+        setCell(row1, gpaColumn, "", styles.summaryGpaHeader);
+        setCell(row2, gpaColumn, "", styles.summaryGpaHeader);
+        setCell(row3, gpaColumn, "", styles.summaryGpaHeader);
+
+        int commentColumn = gpaColumn + 1;
+        CellRangeAddress commentRegion = new CellRangeAddress(startRow, startRow + 3, commentColumn, commentColumn);
+        merge(sheet, commentRegion.getFirstRow(), commentRegion.getLastRow(), commentRegion.getFirstColumn(), commentRegion.getLastColumn());
+        applyHeaderBorder(sheet, commentRegion);
+        setCell(row0, commentColumn, "Nh\u1eadn x\u00e9t kh\u00e1c \u0111\u1ed1i v\u1edbi sinh vi\u00ean", styles.header);
+        setCell(row1, commentColumn, "", styles.header);
+        setCell(row2, commentColumn, "", styles.header);
+        setCell(row3, commentColumn, "", styles.header);
+
+        return startRow + 4;
+    }
+
+    private List<SummaryEntry> buildSummaryEntries(List<Lecturer> lecturers) {
+        int lecturerCount = lecturers.size();
+        Map<String, SummaryEntry> map = new LinkedHashMap<>();
+
+        for (int lecturerIndex = 0; lecturerIndex < lecturerCount; lecturerIndex++) {
+            Lecturer lecturer = lecturers.get(lecturerIndex);
+            List<StudentEvaluation> evaluations = lecturer != null && lecturer.getEvaluations() != null
+                    ? lecturer.getEvaluations()
+                    : Collections.emptyList();
+            String lecturerName = lecturer != null ? nullSafe(lecturer.getLecturerName()) : "";
+
+            for (StudentEvaluation evaluation : evaluations) {
+                if (evaluation == null) {
+                    continue;
+                }
+                String studentId = nullSafe(evaluation.getStudentId());
+                String className = nullSafe(evaluation.getClassName());
+                String studentName = nullSafe(evaluation.getStudentName());
+                String key = studentId + "|" + className + "|" + studentName;
+                SummaryEntry entry = map.computeIfAbsent(key,
+                        k -> new SummaryEntry(studentId, studentName, className, lecturerCount));
+
+                if (entry.studentName == null || entry.studentName.isEmpty()) {
+                    entry.studentName = studentName;
+                }
+                if (entry.className == null || entry.className.isEmpty()) {
+                    entry.className = className;
+                }
+
+                Double totalScore = evaluation.getEvaluations() != null
+                        ? evaluation.getEvaluations().getTotalScore()
+                        : null;
+                entry.scores.set(lecturerIndex, totalScore);
+
+                String labeledComment = labelComment(lecturerName, evaluation.getComment());
+                if (!labeledComment.isEmpty()) {
+                    entry.comments.add(labeledComment);
+                }
+            }
+        }
+
+        return new ArrayList<>(map.values());
+    }
+
+    private void populateSummaryRows(Sheet sheet,
+                                     int startRow,
+                                     List<SummaryEntry> entries,
+                                     Styles styles) {
+        int rowIndex = startRow;
+        int order = 1;
+        for (SummaryEntry entry : entries) {
+            Row row = sheet.createRow(rowIndex++);
+            setCell(row, 0, order++, styles.cellCenter);
+            setCell(row, 1, nullSafe(entry.studentId), styles.cellCenter);
+
+            String[] nameParts = splitStudentName(entry.studentName);
+            setCell(row, 2, nameParts[0], styles.cellLeft);
+            setCell(row, 3, nameParts[1], styles.cellLeft);
+            setCell(row, 4, nullSafe(entry.className), styles.cellCenter);
+
+            int colIdx = 5;
+            for (Double score : entry.scores) {
+                setCell(row, colIdx++, score, styles.cellCenter);
+            }
+
+            Double average = averageScore(entry.scores);
+            setCell(row, colIdx++, average, styles.summaryGpaCell);
+
+            String comments = String.join("\n", entry.comments).trim();
+            CellStyle commentStyle = comments.contains("\n") ? styles.cellLeftWrap : styles.cellLeft;
+            setCell(row, colIdx, comments, commentStyle);
+        }
+    }
+
+    private Double averageScore(List<Double> scores) {
+        double sum = 0;
+        int count = 0;
+        for (Double score : scores) {
+            if (score != null) {
+                sum += score;
+                count++;
+            }
+        }
+        return count == 0 ? null : sum / count;
+    }
+
+    private String labelComment(String lecturerName, String rawComment) {
+        String comment = rawComment != null ? rawComment.trim() : "";
+        if (comment.isEmpty()) {
+            return "";
+        }
+        String name = lecturerName != null ? lecturerName.trim() : "";
+        return name.isEmpty() ? comment : name + ": " + comment;
     }
 
     private int buildSheetHeaderBlock(Sheet sheet,
@@ -526,6 +735,22 @@ public class EvaluationExportService {
         RegionUtil.setBorderRight(BorderStyle.THIN, region, sheet);
     }
 
+    private static class SummaryEntry {
+        final String studentId;
+        String studentName;
+        String className;
+        final List<Double> scores;
+        final List<String> comments;
+
+        SummaryEntry(String studentId, String studentName, String className, int lecturerCount) {
+            this.studentId = studentId;
+            this.studentName = studentName;
+            this.className = className;
+            this.scores = new ArrayList<>(Collections.nCopies(lecturerCount, null));
+            this.comments = new ArrayList<>();
+        }
+    }
+
     private static class Styles {
         final CellStyle boldLeft;
         final CellStyle boldCenter;
@@ -539,6 +764,9 @@ public class EvaluationExportService {
         final CellStyle headerRed;
         final CellStyle cellCenter;
         final CellStyle cellLeft;
+        final CellStyle cellLeftWrap;
+        final CellStyle summaryGpaHeader;
+        final CellStyle summaryGpaCell;
         final CellStyle note;
         final CellStyle noteHeading;
         final CellStyle noteEmphasis;
@@ -661,6 +889,20 @@ public class EvaluationExportService {
             cellLeft.setVerticalAlignment(VerticalAlignment.CENTER);
             addBorder(cellLeft);
 
+            cellLeftWrap = workbook.createCellStyle();
+            cellLeftWrap.cloneStyleFrom(cellLeft);
+            cellLeftWrap.setWrapText(true);
+
+            summaryGpaCell = workbook.createCellStyle();
+            summaryGpaCell.cloneStyleFrom(cellCenter);
+            summaryGpaCell.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
+            summaryGpaCell.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            summaryGpaHeader = workbook.createCellStyle();
+            summaryGpaHeader.cloneStyleFrom(header);
+            summaryGpaHeader.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
+            summaryGpaHeader.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
             note = workbook.createCellStyle();
             note.setFont(noteFont);
             note.setAlignment(HorizontalAlignment.LEFT);
@@ -687,3 +929,4 @@ public class EvaluationExportService {
         }
     }
 }
+
