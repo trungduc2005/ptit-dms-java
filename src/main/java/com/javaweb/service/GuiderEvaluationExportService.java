@@ -30,16 +30,24 @@ public class GuiderEvaluationExportService {
             ColumnType.PROJECT
     };
 
-    private static final ColumnType[] PB_COLUMNS = {
-                ColumnType.ORDER,
-                ColumnType.STUDENT_ID,
-                ColumnType.STUDENT_LAST,
-                ColumnType.STUDENT_FIRST,
-                ColumnType.PROJECT,
-                ColumnType.REVIEWER
+    protected static final ColumnType[] PB_COLUMNS = {
+            ColumnType.ORDER,
+            ColumnType.STUDENT_ID,
+            ColumnType.STUDENT_LAST,
+            ColumnType.STUDENT_FIRST,
+            ColumnType.GUIDER,
+            ColumnType.PROJECT,
+            ColumnType.REVIEWER
     };
 
+    private static final SheetLayout GVHD_SHEET =
+            new SheetLayout("GVHD_CaNhan", GVHD_COLUMNS, styles -> Collections.emptyList());
+
     public Workbook buildWorkbook(GuiderEvaluationDto.Root root) {
+        return buildWorkbook(root, GVHD_SHEET);
+    }
+
+    protected Workbook buildWorkbook(GuiderEvaluationDto.Root root, SheetLayout sheetLayout) {
         Workbook workbook = new XSSFWorkbook();
         Styles styles = new Styles(workbook);
 
@@ -51,8 +59,14 @@ public class GuiderEvaluationExportService {
                 : Collections.emptyList();
 
         List<FormBlock> blocks = buildBlocks(forms, students, styles, workbook);
+        List<ExtraColumn> extraColumns = sheetLayout != null && sheetLayout.extraColumnBuilder() != null
+                ? sheetLayout.extraColumnBuilder().build(styles)
+                : Collections.emptyList();
 
-        buildSheet(workbook, "GVHD_CaNhan", GVHD_COLUMNS, students, blocks, styles);
+        String sheetName = sheetLayout != null ? sheetLayout.sheetName() : "Export";
+        ColumnType[] layout = sheetLayout != null ? sheetLayout.columns() : GVHD_COLUMNS;
+
+        buildSheet(workbook, sheetName, layout, students, blocks, extraColumns, styles);
 
         if (workbook.getNumberOfSheets() == 0) {
             workbook.createSheet("Empty");
@@ -61,22 +75,41 @@ public class GuiderEvaluationExportService {
         return workbook;
     }
 
+    /**
+     * Starting row index for the header (allows subclasses to prepend blank rows).
+     */
+    protected int headerStartRow() {
+        return 0;
+    }
+
     private void buildSheet(Workbook workbook,
                             String sheetName,
                             ColumnType[] layout,
                             List<Student> students,
                             List<FormBlock> blocks,
+                            List<ExtraColumn> extras,
                             Styles styles) {
 
         Sheet sheet = workbook.createSheet(sheetName);
-        configureColumns(sheet, layout, blocks);
+        configureColumns(sheet, layout, blocks, extras);
 
-        int rowIndex = 0;
-        rowIndex = buildHeader(sheet, rowIndex, layout, blocks, styles);
-        populateRows(sheet, rowIndex, students, layout, blocks, styles);
+        int headerRowIndex = headerStartRow();
+        if (headerRowIndex > 0) {
+            for (int i = 0; i < headerRowIndex; i++) {
+                if (sheet.getRow(i) == null) {
+                    sheet.createRow(i);
+                }
+            }
+        }
+
+        int rowIndex = buildHeader(sheet, headerRowIndex, layout, blocks, extras, styles);
+        populateRows(sheet, rowIndex, students, layout, blocks, extras, styles);
     }
 
-    private void configureColumns(Sheet sheet, ColumnType[] layout, List<FormBlock> blocks) {
+    private void configureColumns(Sheet sheet,
+                                  ColumnType[] layout,
+                                  List<FormBlock> blocks,
+                                  List<ExtraColumn> extras) {
         for (int i = 0; i < layout.length; i++) {
             sheet.setColumnWidth(i, layout[i].width());
         }
@@ -87,12 +120,19 @@ public class GuiderEvaluationExportService {
                 sheet.setColumnWidth(column++, 22 * 256);
             }
         }
+
+        if (extras != null) {
+            for (ExtraColumn extra : extras) {
+                sheet.setColumnWidth(column++, extra.width());
+            }
+        }
     }
 
     private int buildHeader(Sheet sheet,
                             int startRow,
                             ColumnType[] layout,
                             List<FormBlock> blocks,
+                            List<ExtraColumn> extras,
                             Styles styles) {
 
         Row row0 = sheet.createRow(startRow);
@@ -133,6 +173,17 @@ public class GuiderEvaluationExportService {
             }
         }
 
+        if (extras != null) {
+            for (ExtraColumn extra : extras) {
+                CellStyle headerStyle = extra.headerStyle() != null ? extra.headerStyle() : styles.header;
+                merge(sheet, startRow, startRow + 2, columnIndex, columnIndex);
+                setCell(row0, columnIndex, extra.header(), headerStyle);
+                setCell(row2, columnIndex, "", headerStyle);
+                setCell(row3, columnIndex, "", headerStyle);
+                columnIndex++;
+            }
+        }
+
         return startRow + 3;
     }
 
@@ -141,6 +192,7 @@ public class GuiderEvaluationExportService {
                               List<Student> students,
                               ColumnType[] layout,
                               List<FormBlock> blocks,
+                              List<ExtraColumn> extras,
                               Styles styles) {
 
         int rowIndex = startRow;
@@ -156,14 +208,10 @@ public class GuiderEvaluationExportService {
                     case STUDENT_ID -> setCell(row, baseColumnIndex, nullSafe(student.getStudentId()), styles.cellCenter);
                     case STUDENT_LAST -> setCell(row, baseColumnIndex, nameParts[0], styles.cellLeft);
                     case STUDENT_FIRST -> setCell(row, baseColumnIndex, nameParts[1], styles.cellLeft);
-                    case GUIDER -> {
-                        String roleSuffix = student.getRole() != null ? ", " + student.getRole() : "";
-                        setCell(row, baseColumnIndex, nullSafe(student.getGuiderName()) + roleSuffix, styles.cellLeftWrap);
-                    }
+                    case GUIDER -> setCell(row, baseColumnIndex, nullSafe(student.getGuiderName()), styles.cellLeftWrap);
                     case PROJECT -> setCell(row, baseColumnIndex, nullSafe(student.getProjectName()), styles.cellLeftWrap);
                     case REVIEWER -> {
-                        String roleSuffix = student.getRole() != null ? ", " + student.getRole() : "";
-                        setCell(row, baseColumnIndex, nullSafe(student.getReviewerName()) + roleSuffix, styles.cellLeftWrap);
+                        setCell(row, baseColumnIndex, "", styles.cellLeftWrap);
                     }
                 }
 
@@ -188,6 +236,13 @@ public class GuiderEvaluationExportService {
                     setCell(row, columnIndex++, value, block.cellStyle());
                 }
             }
+
+            if (extras != null) {
+                for (ExtraColumn extra : extras) {
+                    Object value = extra.valueProvider() != null ? extra.valueProvider().apply(student) : "";
+                    setCell(row, columnIndex++, value, extra.cellStyle());
+                }
+            }
         }
     }
 
@@ -197,12 +252,10 @@ public class GuiderEvaluationExportService {
                                         Workbook workbook) {
         List<FormBlock> blocks = new ArrayList<>();
         Map<String, EvaluationTemplate> templates = buildEvaluationTemplates(students);
-        short[] palette = {
-                IndexedColors.ROSE.getIndex(),
-                IndexedColors.LIGHT_GREEN.getIndex(),
-                IndexedColors.LAVENDER.getIndex(),
-                IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex()
-        };
+        short[] palette = blockPalette();
+        if (palette == null || palette.length == 0) {
+            palette = new short[]{IndexedColors.ROSE.getIndex()};
+        }
 
         List<String> covered = new ArrayList<>();
 
@@ -247,6 +300,15 @@ public class GuiderEvaluationExportService {
             blocks.add(new FormBlock(fallback, new ArrayList<>(entries), blockHeader, blockCell));
         }
         return blocks;
+    }
+
+    protected short[] blockPalette() {
+        return new short[]{
+                IndexedColors.ROSE.getIndex(),
+                IndexedColors.LIGHT_GREEN.getIndex(),
+                IndexedColors.LAVENDER.getIndex(),
+                IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex()
+        };
     }
 
     private List<PiEntry> expandPis(EvaluationForm form) {
@@ -308,7 +370,7 @@ public class GuiderEvaluationExportService {
         return templates;
     }
 
-    private String blockTitle(EvaluationForm form) {
+    protected String blockTitle(EvaluationForm form) {
         if (form == null) {
             return "Phi\u1ebfu ch\u1ea5m \u0111i\u1ec3m";
         }
@@ -458,6 +520,26 @@ public class GuiderEvaluationExportService {
                                       String title,
                                       List<PiEntry> piEntries) {}
 
+    protected static record ExtraColumn(String header,
+                                        int width,
+                                        CellStyle headerStyle,
+                                        CellStyle cellStyle,
+                                        ExtraValueProvider valueProvider) {}
+
+    protected static record SheetLayout(String sheetName,
+                                        ColumnType[] columns,
+                                        ExtraColumnBuilder extraColumnBuilder) {}
+
+    @FunctionalInterface
+    protected interface ExtraValueProvider {
+        Object apply(Student student);
+    }
+
+    @FunctionalInterface
+    protected interface ExtraColumnBuilder {
+        List<ExtraColumn> build(Styles styles);
+    }
+
     private enum ColumnType {
         ORDER("STT", 5 * 256),
         STUDENT_ID("M\u00e3 sinh vi\u00ean", 16 * 256),
@@ -484,7 +566,7 @@ public class GuiderEvaluationExportService {
         }
     }
 
-    private static class Styles {
+    protected static class Styles {
         final CellStyle header;
         final CellStyle subHeader;
         final CellStyle cellCenter;

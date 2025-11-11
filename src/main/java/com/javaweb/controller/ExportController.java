@@ -4,6 +4,8 @@ import com.javaweb.dto.CouncilEvaluationDto;
 import com.javaweb.dto.GuiderEvaluationDto;
 import com.javaweb.service.CouncilEvaluationExportService;
 import com.javaweb.service.GuiderEvaluationExportService;
+import com.javaweb.service.ReviewerEvaluationExportService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,11 +20,14 @@ import java.io.ByteArrayOutputStream;
 public class ExportController {
     private final CouncilEvaluationExportService councilSvc;
     private final GuiderEvaluationExportService guiderSvc;
+    private final ReviewerEvaluationExportService reviewerSvc;
 
     public ExportController(CouncilEvaluationExportService councilSvc,
-                            GuiderEvaluationExportService guiderSvc) {
+                            @Qualifier("guiderEvaluationExportService") GuiderEvaluationExportService guiderSvc,
+                            @Qualifier("reviewerEvaluationExportService") ReviewerEvaluationExportService reviewerSvc) {
         this.councilSvc = councilSvc;
         this.guiderSvc = guiderSvc;
+        this.reviewerSvc = reviewerSvc;
     }
 
     @PostMapping("/xlsx")
@@ -35,6 +40,12 @@ public class ExportController {
     public ResponseEntity<byte[]> guider(@RequestBody GuiderEvaluationDto.Root payload) throws Exception {
         Workbook wb = guiderSvc.buildWorkbook(payload);
         return buildResponse(wb, "phieu_cham_gvhd.xlsx");
+    }
+
+    @PostMapping("/xlsx/reviewer")
+    public ResponseEntity<byte[]> reviewer(@RequestBody GuiderEvaluationDto.Root payload) throws Exception {
+        Workbook wb = reviewerSvc.buildWorkbook(payload);
+        return buildResponse(wb, "phieu_cham_pb.xlsx");
     }
 
     private ResponseEntity<byte[]> buildResponse(Workbook workbook, String filename) throws Exception {
