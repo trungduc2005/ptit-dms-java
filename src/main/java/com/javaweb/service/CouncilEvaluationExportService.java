@@ -76,8 +76,8 @@ public class CouncilEvaluationExportService {
             totalPiColumns += Math.max(1, pis.size());
         }
 
-        int baseColumns = 5; // TT, MÃ£ SV, Há», TÃªn, Lá»›p
-        int totalColumns = baseColumns + totalPiColumns + 2; // +1 Tá»•ng Ä‘iá»ƒm, +1 Nháº­n xÃ©t
+        int baseColumns = 5; // TT, M\u00e3 SV, H\u1ecd, T\u00ean, L\u1edbp
+        int totalColumns = baseColumns + totalPiColumns + 2; // +1 T\u1ed5ng \u0111i\u1ec3m, +1 Nh\u1eadn x\u00e9t
 
         configureColumnWidths(sheet, totalColumns);
 
@@ -301,7 +301,7 @@ public class CouncilEvaluationExportService {
                                       Styles styles) {
 
         String academicYear = form != null ? nullSafe(form.getAcademicYear()) : "";
-        String formTitle = form != null ? nullSafe(form.getTitle()) : "Phiáº¿u Ä‘Ã¡nh giÃ¡";
+        String formTitle = form != null ? nullSafe(form.getTitle()) : "Phi\u1ebfu \u0111\u00e1nh gi\u00e1";
 
         int leftBlockEnd = Math.min(4, lastColumnIndex);
         final int minimumRightSpan = 4;
@@ -326,35 +326,35 @@ public class CouncilEvaluationExportService {
         if (leftBlockEnd > 0) {
             merge(sheet, row0.getRowNum(), row0.getRowNum(), 0, leftBlockEnd);
         }
-        setCell(row0, 0, "Biá»ƒu máº«u ÄATN.03A", styles.italicLeft);
+        setCell(row0, 0, "Bi\u1ec3u m\u1eabu ATN.03A", styles.italicLeft);
 
         Row row1 = sheet.createRow(rowIndex++);
         if (leftBlockEnd > 0) {
             merge(sheet, row1.getRowNum(), row1.getRowNum(), 0, leftBlockEnd);
         }
-        setCell(row1, 0, "Bá»˜ THÃ”NG TIN VÃ€ TRUYá»€N THÃ”NG", styles.boldLeft);
+        setCell(row1, 0, "B\u1ed8 TH\u00d4NG TIN V\u00c0 TRUY\u1ec0N TH\u00d4NG", styles.boldLeft);
         if (rightBlockStart != -1) {
             merge(sheet, row1.getRowNum(), row1.getRowNum(), rightBlockStart, lastColumnIndex);
-            setCell(row1, rightBlockStart, "Cá»˜NG HÃ’A XÃƒ Há»˜I CHá»¦ NGHÄ¨A VIá»†T NAM", styles.boldCenter);
+            setCell(row1, rightBlockStart, "C\u1ed8NG H\u00d2A X\u00c3 H\u1ed8I CH\u1ee6 NGH\u0128A VI\u1ec6T NAM", styles.boldCenter);
         }
 
         Row row2 = sheet.createRow(rowIndex++);
         if (leftBlockEnd > 0) {
             merge(sheet, row2.getRowNum(), row2.getRowNum(), 0, leftBlockEnd);
         }
-        setCell(row2, 0, "Há»ŒC VIá»†N CÃ”NG NGHá»† BÆ¯U CHÃNH VIá»„N THÃ”NG", styles.boldLeft);
+        setCell(row2, 0, "H\u1eccC VI\u1ec6N C\u00d4NG NGH\u1ec6 B\u01afU CH\u00cdNH VI\u1ec4N TH\u00d4NG", styles.boldLeft);
         if (rightBlockStart != -1) {
             merge(sheet, row2.getRowNum(), row2.getRowNum(), rightBlockStart, lastColumnIndex);
-            setCell(row2, rightBlockStart, "Äá»™c láº­p - Tá»± do - Háº¡nh phÃºc", styles.boldUnderlineCenter);
+            setCell(row2, rightBlockStart, "\u0110\u1ed9c l\u1eadp - T\u1ef1 do - H\u1ea1nh ph\u00fac", styles.boldUnderlineCenter);
         }
 
         Row row3 = sheet.createRow(rowIndex++);
         if (rightBlockStart != -1) {
             merge(sheet, row3.getRowNum(), row3.getRowNum(), rightBlockStart, lastColumnIndex);
-            setCell(row3, rightBlockStart, "HÃ  Ná»™i, ngÃ y .... thÃ¡ng .... nÄƒm ....", styles.centerItalic);
+            setCell(row3, rightBlockStart, "H\u00e0 N\u1ed9i, ng\u00e0y .... th\u00e1ng .... n\u0103m ....", styles.centerItalic);
         }
 
-        rowIndex++; // dÃ²ng trá»‘ng
+        rowIndex++; // d\u00f2ng tr\u1ed1ng
 
         Row titleRow = sheet.createRow(rowIndex++);
         merge(sheet, titleRow.getRowNum(), titleRow.getRowNum(), 0, lastColumnIndex);
@@ -362,43 +362,45 @@ public class CouncilEvaluationExportService {
 
         Row subTitle = sheet.createRow(rowIndex++);
         merge(sheet, subTitle.getRowNum(), subTitle.getRowNum(), 0, lastColumnIndex);
-        setCell(subTitle, 0, "Äá»‘i vá»›i Äá»“ Ã¡n tá»‘t nghiá»‡p", styles.normalCenter);
+        setCell(subTitle, 0, "\u0110\u1ed1i v\u1edbi \u0111\u1ed3 \u00e1n t\u1ed1t nghi\u1ec7p", styles.normalCenter);
 
-        rowIndex++; // dÃ²ng trá»‘ng
+        rowIndex++; // d\u00f2ng tr\u1ed1ng
 
         Row section1 = sheet.createRow(rowIndex++);
-        setCell(section1, 0, "I. THÃ”NG TIN CHUNG", styles.boldLeft);
+        setCell(section1, 0, "I. TH\u00d4NG TIN CHUNG", styles.boldLeft);
 
         String lecturerName = lecturer != null ? nullSafe(lecturer.getLecturerName()) : "";
         String lecturerRole = lecturer != null ? nullSafe(lecturer.getRole()) : "";
         String lecturerDepartment = lecturer != null ? nullSafe(lecturer.getDepartment()) : "";
+
         rowIndex = writeInfoRow(sheet, rowIndex,
-                "ChÆ°Æ¡ng trÃ¬nh Ä‘Ã o táº¡o Ä‘áº¡i há»c chÃ­nh quy:", "",
-                "NiÃªn khÃ³a:", academicYear,
+                "Ch\u01b0\u01a1ng tr\u00ecnh \u0111\u00e0o t\u1ea1o \u0111\u1ea1i h\u1ecdc ch\u00ednh quy:", "",
+                "Ni\u00ean kh\u00f3a:", academicYear,
                 styles, lastColumnIndex);
 
         rowIndex = writeInfoRow(sheet, rowIndex,
-                "Há»™i Ä‘á»“ng chuyÃªn mÃ´n sá»‘:", "",
+                "H\u1ed9i \u0111\u1ed3ng chuy\u00ean m\u00f4n s\u1ed1:", "",
                 null, null,
                 styles, lastColumnIndex);
 
         rowIndex = writeInfoRow(sheet, rowIndex,
-                "Há» vÃ  tÃªn ngÆ°á»i cháº¥m ÄATN: " + lecturerName, null,
-                "Chá»©c danh trong há»™i Ä‘á»“ng: " + lecturerRole, null,
+                "H\u1ecd v\u00e0 t\u00ean ng\u01b0\u1eddi ch\u1ea5m \u0110ATN: " + lecturerName, null,
+                "Ch\u1ee9c danh trong h\u1ed9i \u0111\u1ed3ng: " + lecturerRole, null,
                 styles, lastColumnIndex);
+
         Row unitRow = sheet.createRow(rowIndex++);
         merge(sheet, unitRow.getRowNum(), unitRow.getRowNum(), 0, lastColumnIndex);
-        setCell(unitRow, 0, "ÄÆ¡n vá»‹ cÃ´ng tÃ¡c: " + lecturerDepartment, styles.normalLeft);
+        setCell(unitRow, 0, "\u0110\u01a1n v\u1ecb c\u00f4ng t\u00e1c: " + lecturerDepartment, styles.normalLeft);
 
-        rowIndex++; // dÃ²ng trá»‘ng
+        rowIndex++; // d\u00f2ng tr\u1ed1ng
 
         Row section2 = sheet.createRow(rowIndex++);
-        setCell(section2, 0, "II. Káº¾T QUáº¢ ÄÃNH GIÃ", styles.boldLeft);
+        setCell(section2, 0, "II. K\u1ebeT QU\u1ea2 \u0110\u00c1NH GI\u00c1", styles.boldLeft);
 
         Row note = sheet.createRow(rowIndex++);
         merge(sheet, note.getRowNum(), note.getRowNum(), 0, lastColumnIndex);
-        setCell(note, 0, "Äiá»ƒm má»—i tiÃªu chÃ­ tÃ­nh theo thang Ä‘iá»ƒm 10, lÃ m trÃ²n Ä‘áº¿n má»™t chá»¯ sá»‘ tháº­p phÃ¢n.", styles.note);
-        rowIndex++; // dÃ²ng trá»‘ng giá»¯a chÃº thÃ­ch vÃ  báº£ng
+        setCell(note, 0, "\u0110i\u1ec3m m\u1ed7i ti\u00eau ch\u00ed t\u00ednh theo thang \u0111i\u1ec3m 10, l\u00e0m tr\u00f2n \u0111\u1ebfn m\u1ed9t ch\u1eef s\u1ed1 th\u1eadp ph\u00e2n.", styles.note);
+        rowIndex++; // d\u00f2ng tr\u1ed1ng gi\u1eefa ch\u00fa th\u00edch v\u00e0 b\u1ea3ng
 
         return rowIndex;
     }
@@ -422,7 +424,7 @@ public class CouncilEvaluationExportService {
         setCell(row3, 0, "", styles.header);
 
         merge(sheet, headerRowIndex, headerRowIndex + 3, 1, 1);
-        setCell(row0, 1, "MÃ£ SV", styles.header);
+        setCell(row0, 1, "M\u00e3 SV", styles.header);
         setCell(row1, 1, "", styles.header);
         setCell(row2, 1, "", styles.header);
         setCell(row3, 1, "", styles.header);
@@ -430,7 +432,7 @@ public class CouncilEvaluationExportService {
         CellRangeAddress nameRegion = new CellRangeAddress(headerRowIndex, headerRowIndex + 3, 2, 3);
         merge(sheet, nameRegion.getFirstRow(), nameRegion.getLastRow(), nameRegion.getFirstColumn(), nameRegion.getLastColumn());
         applyHeaderBorder(sheet, nameRegion);
-        setCell(row0, 2, "Há» vÃ  tÃªn SV", styles.header);
+        setCell(row0, 2, "H\u1ecd v\u00e0 t\u00ean SV", styles.header);
         setCell(row0, 3, "", styles.header);
         setCell(row1, 2, "", styles.header);
         setCell(row1, 3, "", styles.header);
@@ -440,7 +442,7 @@ public class CouncilEvaluationExportService {
         setCell(row3, 3, "", styles.header);
 
         merge(sheet, headerRowIndex, headerRowIndex + 3, 4, 4);
-        setCell(row0, 4, "Lá»›p", styles.header);
+        setCell(row0, 4, "L\u1edbp", styles.header);
         setCell(row1, 4, "", styles.header);
         setCell(row2, 4, "", styles.header);
         setCell(row3, 4, "", styles.header);
@@ -476,13 +478,13 @@ public class CouncilEvaluationExportService {
             CellRangeAddress cloRegion = new CellRangeAddress(headerRowIndex, headerRowIndex, cloStartCol, cloEndCol);
             merge(sheet, cloRegion.getFirstRow(), cloRegion.getLastRow(), cloRegion.getFirstColumn(), cloRegion.getLastColumn());
             applyHeaderBorder(sheet, cloRegion);
-            setCell(row0, cloStartCol, "Káº¿t quáº£ Ä‘Ã¡nh giÃ¡ CLO vÃ  tiÃªu chÃ­", styles.header);
+            setCell(row0, cloStartCol, "K\u1ebft qu\u1ea3 \u0111\u00e1nh gi\u00e1 CLO v\u00e0 ti\u00eau ch\u00ed", styles.header);
         }
 
         CellRangeAddress totalRegion = new CellRangeAddress(headerRowIndex, headerRowIndex + 3, columnIndex, columnIndex);
         merge(sheet, totalRegion.getFirstRow(), totalRegion.getLastRow(), totalRegion.getFirstColumn(), totalRegion.getLastColumn());
         applyHeaderBorder(sheet, totalRegion);
-        setCell(row0, columnIndex, "Tá»•ng Ä‘iá»ƒm", styles.header);
+        setCell(row0, columnIndex, "T\u1ed5ng \u0111i\u1ec3m", styles.header);
         setCell(row1, columnIndex, "", styles.header);
         setCell(row2, columnIndex, "", styles.header);
         setCell(row3, columnIndex, "", styles.header);
@@ -491,7 +493,7 @@ public class CouncilEvaluationExportService {
         CellRangeAddress commentRegion = new CellRangeAddress(headerRowIndex, headerRowIndex + 3, columnIndex, columnIndex);
         merge(sheet, commentRegion.getFirstRow(), commentRegion.getLastRow(), commentRegion.getFirstColumn(), commentRegion.getLastColumn());
         applyHeaderBorder(sheet, commentRegion);
-        setCell(row0, columnIndex, "Nháº­n xÃ©t khÃ¡c Ä‘á»‘i vá»›i sinh viÃªn", styles.header);
+        setCell(row0, columnIndex, "Nh\u1eadn x\u00e9t kh\u00e1c \u0111\u1ed1i v\u1edbi sinh vi\u00ean", styles.header);
         setCell(row1, columnIndex, "", styles.header);
         setCell(row2, columnIndex, "", styles.header);
         setCell(row3, columnIndex, "", styles.header);

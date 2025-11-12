@@ -210,9 +210,7 @@ public class GuiderEvaluationExportService {
                     case STUDENT_FIRST -> setCell(row, baseColumnIndex, nameParts[1], styles.cellLeft);
                     case GUIDER -> setCell(row, baseColumnIndex, nullSafe(student.getGuiderName()), styles.cellLeftWrap);
                     case PROJECT -> setCell(row, baseColumnIndex, nullSafe(student.getProjectName()), styles.cellLeftWrap);
-                    case REVIEWER -> {
-                        setCell(row, baseColumnIndex, "", styles.cellLeftWrap);
-                    }
+                    case REVIEWER -> setCell(row, baseColumnIndex, nullSafe(student.getReviewerName()), styles.cellLeftWrap);
                 }
 
                 if (column == ColumnType.ORDER) {
