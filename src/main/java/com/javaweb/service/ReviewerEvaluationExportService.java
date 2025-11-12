@@ -13,7 +13,7 @@ public class ReviewerEvaluationExportService extends GuiderEvaluationExportServi
     private static final SheetLayout REVIEWER_SHEET =
             new SheetLayout("PB_CaNhan", PB_COLUMNS, styles ->
                     Collections.singletonList(new ExtraColumn(
-                            "Nh\u1eadn x\u00e9t/Y\u00eau c\u1ea7u s\u1eeda \u0111\u1ed5i (\u1ebfu c\u00f3)",
+                            "Nh\u1eadn x\u00e9t/Y\u00eau c\u1ea7u s\u1eeda \u0111\u1ed5i \r\n (\u006e\u1ebfu c\u00f3)",
                             32 * 256,
                             styles.header,
                             styles.cellLeftWrap,
