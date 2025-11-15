@@ -8,13 +8,12 @@ import com.javaweb.service.ReviewerEvaluationExportService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.http.*;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayOutputStream;
 
+
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api/export")
 public class ExportController {
