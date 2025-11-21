@@ -29,7 +29,7 @@ public class ExportController {
         this.reviewerSvc = reviewerSvc;
     }
 
-    @PostMapping("/xlsx")
+    @PostMapping("/xlsx/member")
     public ResponseEntity<byte[]> council(@RequestBody CouncilEvaluationDto.Root payload) throws Exception {
         Workbook wb = councilSvc.buildWorkbook(payload);
         return buildResponse(wb, "phieu_cham_hoi_dong.xlsx");
